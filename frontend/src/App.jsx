@@ -10,11 +10,11 @@ import {
   Wine, 
   UserCheck, 
   Calendar,
-  Building2,
-  ShieldCheck
+  Phone,
+  PhoneCall
 } from 'lucide-react';
 
-// Initial Mock Data
+// Initial Mock Data with Phone Numbers
 const INITIAL_SHIPMENTS = [
   {
     id: "TRK-9021",
@@ -25,7 +25,7 @@ const INITIAL_SHIPMENTS = [
     receiver: "Bole Distribution Depot",
     receiverCity: "Addis Ababa, ET",
     travelerName: "Yonas Mengistu",
-    flightNo: "ET 601",
+    travelerPhone: "+971 50 123 4567",
     departureDate: "2026-09-09",
     status: "In Transit", // 'Dispatched', 'In Transit', 'Received', 'Discrepancy'
     receivedQuantity: null,
@@ -41,7 +41,7 @@ const INITIAL_SHIPMENTS = [
     receiver: "Bole Distribution Depot",
     receiverCity: "Addis Ababa, ET",
     travelerName: "Sara Tefera",
-    flightNo: "EK 723",
+    travelerPhone: "+251 91 234 5678",
     departureDate: "2026-09-06",
     status: "Received",
     receivedQuantity: 4,
@@ -57,7 +57,7 @@ const INITIAL_SHIPMENTS = [
     receiver: "Kazanchis Vault",
     receiverCity: "Addis Ababa, ET",
     travelerName: "Dawit Bekele",
-    flightNo: "ET 603",
+    travelerPhone: "+971 55 987 6543",
     departureDate: "2026-09-04",
     status: "Discrepancy",
     receivedQuantity: 2,
@@ -68,19 +68,19 @@ const INITIAL_SHIPMENTS = [
 
 export default function App() {
   const [shipments, setShipments] = useState(INITIAL_SHIPMENTS);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'dubai', 'transit', 'addis'
+  const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState(null);
 
-  // Form State for New Shipment (Dubai Outbound)
+  // Form State for New Shipment
   const [formData, setFormData] = useState({
     brand: '',
     quantity: '',
     sender: 'Dubai Central Warehouse',
     receiver: 'Bole Hub (Addis Ababa)',
     travelerName: '',
-    flightNo: '',
+    travelerPhone: '',
     departureDate: '',
     notes: ''
   });
@@ -90,8 +90,8 @@ export default function App() {
     const matchesSearch = 
       item.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.travelerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.flightNo.toLowerCase().includes(searchQuery.toLowerCase());
+      item.travelerPhone.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.id.toLowerCase().includes(searchQuery.toLowerCase());
 
     if (activeTab === 'dubai') return matchesSearch && item.status === 'Dispatched';
     if (activeTab === 'transit') return matchesSearch && item.status === 'In Transit';
@@ -111,7 +111,7 @@ export default function App() {
       receiver: formData.receiver,
       receiverCity: "Addis Ababa, ET",
       travelerName: formData.travelerName,
-      flightNo: formData.flightNo,
+      travelerPhone: formData.travelerPhone,
       departureDate: formData.departureDate || new Date().toISOString().split('T')[0],
       status: "Dispatched",
       receivedQuantity: null,
@@ -127,13 +127,13 @@ export default function App() {
       sender: 'Dubai Central Warehouse',
       receiver: 'Bole Hub (Addis Ababa)',
       travelerName: '',
-      flightNo: '',
+      travelerPhone: '',
       departureDate: '',
       notes: ''
     });
   };
 
-  // Status Handlers (Traveler & Receiver updates)
+  // Status Handlers
   const updateStatus = (id, newStatus, receivedQty = null) => {
     setShipments(prev => prev.map(item => {
       if (item.id === id) {
@@ -148,13 +148,12 @@ export default function App() {
     setSelectedShipment(null);
   };
 
-  // Status Badges
   const renderBadge = (status) => {
     switch (status) {
       case 'Dispatched':
         return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">DXB Dispatched</span>;
       case 'In Transit':
-        return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">In Flight / Transit</span>;
+        return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">In Transit</span>;
       case 'Received':
         return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Received in Addis</span>;
       case 'Discrepancy':
@@ -164,7 +163,6 @@ export default function App() {
     }
   };
 
-  // Metrics
   const totalBottlesOut = shipments.reduce((acc, curr) => acc + curr.quantity, 0);
   const totalBottlesIn = shipments.reduce((acc, curr) => acc + (curr.receivedQuantity || 0), 0);
   const inTransitCount = shipments.filter(s => s.status === 'In Transit' || s.status === 'Dispatched').length;
@@ -182,13 +180,13 @@ export default function App() {
               <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text text-transparent">
                 AmberVault Track
               </span>
-              <span className="text-xs text-slate-400 block -mt-1">Dubai ✈ Addis Ababa Whiskey Corridor</span>
+              <span className="text-xs text-slate-400 block -mt-1">Dubai ➔ Addis Ababa Whiskey Logistics</span>
             </div>
           </div>
 
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-lg font-medium text-sm transition-all shadow-lg shadow-amber-500/10"
+            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-lg font-medium text-sm transition-all shadow-lg shadow-amber-500/10 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>New Outbound (DXB)</span>
@@ -237,8 +235,8 @@ export default function App() {
           <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 flex-1 max-w-md">
             <Search className="w-4 h-4 text-slate-400 mr-2" />
             <input 
-              type="text"
-              placeholder="Search by bottle, traveler, flight, or tracking ID..."
+              type="text" 
+              placeholder="Search by bottle, traveler, phone, or ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent text-sm w-full outline-none placeholder:text-slate-500 text-slate-200"
@@ -250,7 +248,7 @@ export default function App() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1.5 rounded-md font-medium capitalize whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 rounded-md font-medium capitalize whitespace-nowrap transition-all cursor-pointer ${
                   activeTab === tab 
                     ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30 shadow-sm' 
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
@@ -262,14 +260,14 @@ export default function App() {
           </div>
         </div>
 
-        {/* Shipments Table / List */}
+        {/* Shipments Table */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-900/80 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Tracking & Whiskey</th>
-                  <th className="py-3.5 px-4">Origin ➔ Destination</th>
+                  <th className="py-3.5 px-4">Route & Vault</th>
                   <th className="py-3.5 px-4">Assigned Traveler</th>
                   <th className="py-3.5 px-4">Quantity</th>
                   <th className="py-3.5 px-4">Status</th>
@@ -304,12 +302,15 @@ export default function App() {
                       </td>
 
                       <td className="py-4 px-4">
-                        <div className="flex items-center gap-1.5 font-medium text-slate-300">
+                        <div className="flex items-center gap-1.5 font-medium text-slate-200">
                           <UserCheck className="w-3.5 h-3.5 text-slate-400" />
                           {item.travelerName}
                         </div>
-                        <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                          <span>{item.flightNo}</span> • <span>{item.departureDate}</span>
+                        <div className="text-xs text-amber-400/90 flex items-center gap-1 mt-0.5 font-mono">
+                          <Phone className="w-3 h-3 text-slate-500" />
+                          <a href={`tel:${item.travelerPhone}`} className="hover:underline">
+                            {item.travelerPhone}
+                          </a>
                         </div>
                       </td>
 
@@ -331,7 +332,7 @@ export default function App() {
                       <td className="py-4 px-4 text-right">
                         <button 
                           onClick={() => setSelectedShipment(item)}
-                          className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded border border-slate-700 transition"
+                          className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded border border-slate-700 transition cursor-pointer"
                         >
                           Manage
                         </button>
@@ -356,7 +357,7 @@ export default function App() {
               </h3>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-200 text-xl font-bold"
+                className="text-slate-400 hover:text-slate-200 text-xl font-bold cursor-pointer"
               >
                 &times;
               </button>
@@ -389,13 +390,11 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Flight Number</label>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Departure Date</label>
                   <input 
-                    type="text" 
-                    required
-                    placeholder="e.g., ET 601"
-                    value={formData.flightNo}
-                    onChange={(e) => setFormData({...formData, flightNo: e.target.value})}
+                    type="date" 
+                    value={formData.departureDate}
+                    onChange={(e) => setFormData({...formData, departureDate: e.target.value})}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-amber-500"
                   />
                 </div>
@@ -414,11 +413,13 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Departure Date</label>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Traveler Phone Number</label>
                   <input 
-                    type="date" 
-                    value={formData.departureDate}
-                    onChange={(e) => setFormData({...formData, departureDate: e.target.value})}
+                    type="tel" 
+                    required
+                    placeholder="e.g., +251 91 234 5678"
+                    value={formData.travelerPhone}
+                    onChange={(e) => setFormData({...formData, travelerPhone: e.target.value})}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-amber-500"
                   />
                 </div>
@@ -449,13 +450,13 @@ export default function App() {
                 <button 
                   type="button" 
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 font-medium"
+                  className="px-4 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 font-medium cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-sm font-semibold transition"
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-sm font-semibold transition cursor-pointer"
                 >
                   Confirm Dispatch
                 </button>
@@ -465,7 +466,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal 2: Manage & Confirm Arrival (Addis Receiver Admin / Status Change) */}
+      {/* Modal 2: Manage & Confirm Arrival */}
       {selectedShipment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-xl overflow-hidden shadow-2xl">
@@ -476,7 +477,7 @@ export default function App() {
               </div>
               <button 
                 onClick={() => setSelectedShipment(null)}
-                className="text-slate-400 hover:text-slate-200 text-xl font-bold"
+                className="text-slate-400 hover:text-slate-200 text-xl font-bold cursor-pointer"
               >
                 &times;
               </button>
@@ -484,9 +485,19 @@ export default function App() {
 
             <div className="p-6 space-y-4 text-sm">
               <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2">
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-slate-500">Traveler:</span>
-                  <span className="font-medium text-slate-200">{selectedShipment.travelerName} ({selectedShipment.flightNo})</span>
+                  <span className="font-medium text-slate-200">{selectedShipment.travelerName}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Phone:</span>
+                  <a 
+                    href={`tel:${selectedShipment.travelerPhone}`} 
+                    className="font-mono text-xs text-amber-400 flex items-center gap-1 hover:underline"
+                  >
+                    <PhoneCall className="w-3.5 h-3.5" />
+                    {selectedShipment.travelerPhone}
+                  </a>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Bottles Sent:</span>
@@ -510,7 +521,7 @@ export default function App() {
                 {selectedShipment.status === 'Dispatched' && (
                   <button 
                     onClick={() => updateStatus(selectedShipment.id, 'In Transit')}
-                    className="w-full py-2.5 px-3 bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/40 text-sky-300 font-medium rounded-lg text-sm transition flex items-center justify-center gap-2"
+                    className="w-full py-2.5 px-3 bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/40 text-sky-300 font-medium rounded-lg text-sm transition flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <PlaneTakeoff className="w-4 h-4" />
                     Handed to Traveler (Departed Dubai)
@@ -521,7 +532,7 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <button 
                     onClick={() => updateStatus(selectedShipment.id, 'Received', selectedShipment.quantity)}
-                    className="py-2.5 px-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-medium rounded-lg text-xs transition flex flex-col items-center justify-center text-center gap-1"
+                    className="py-2.5 px-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-medium rounded-lg text-xs transition flex flex-col items-center justify-center text-center gap-1 cursor-pointer"
                   >
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     All Received ({selectedShipment.quantity} Bottles)
@@ -539,7 +550,7 @@ export default function App() {
                         );
                       }
                     }}
-                    className="py-2.5 px-2 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-rose-300 font-medium rounded-lg text-xs transition flex flex-col items-center justify-center text-center gap-1"
+                    className="py-2.5 px-2 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-rose-300 font-medium rounded-lg text-xs transition flex flex-col items-center justify-center text-center gap-1 cursor-pointer"
                   >
                     <AlertTriangle className="w-4 h-4 text-rose-400" />
                     Damage / Missing
