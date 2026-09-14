@@ -4,13 +4,13 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 model User {
   id        String     @id @default(uuid())
   name      String
-  email     String     @unique
+  phone     String     @unique
   password  String
   role      String     // 'sender', 'receiver', 'superadmin'
   createdAt DateTime   @default(now())
@@ -31,6 +31,7 @@ model Shipment {
   status           String    @default("Dispatched")
   receivedQuantity Int?
   notes            String?
+  lastCalledAt     String?   // Tracks timestamp when admin dialed the traveler
   createdAt        DateTime  @default(now())
   createdById      String?
   createdBy        User?     @relation("UserShipments", fields: [createdById], references: [id])

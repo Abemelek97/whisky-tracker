@@ -12,40 +12,45 @@ const app = express();
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// ----------------- AUTH ROUTES ----------------- //
+app.get('/', (req, res) => {
+  res.json({ status: 'online', message: 'AmberVault Logistics API' });
+});
+
+// ----------------- AUTH BY PHONE ----------------- //
 
 // POST /api/auth/register
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-    if (!email || !password || !name) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    const { name, phone, password, role } = req.body;
+    if (!phone || !password || !name) {
+      return res.status(400).json({ error: 'Phone, name, and password are required' });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const cleanPhone = phone.trim();
+    const existingUser = await prisma.user.findUnique({ where: { phone: cleanPhone } });
     if (existingUser) {
-      return res.status(400).json({ error: 'Email is already registered' });
+      return res.status(400).json({ error: 'This phone number is already registered' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        phone: cleanPhone,
         password: hashedPassword,
         role: role || 'sender'
       }
     });
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name },
+      { id: user.id, phone: user.phone, role: user.role, name: user.name },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
     res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role }
+      user: { id: user.id, name: user.name, phone: user.phone, role: user.role }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -55,26 +60,31 @@ app.post('/api/auth/register', async (req, res) => {
 // POST /api/auth/login
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const { phone, password } = req.body;
+    if (!phone || !password) {
+      return res.status(400).json({ error: 'Phone number and password required' });
+    }
+
+    const cleanPhone = phone.trim();
+    const user = await prisma.user.findUnique({ where: { phone: cleanPhone } });
     if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'No account registered with this phone number' });
     }
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Incorrect password' });
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name },
+      { id: user.id, phone: user.phone, role: user.role, name: user.name },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
     res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role }
+      user: { id: user.id, name: user.name, phone: user.phone, role: user.role }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -83,7 +93,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 // ----------------- SHIPMENT ROUTES ----------------- //
 
-// GET /api/shipments (Corridor list)
+// GET /api/shipments
 app.get('/api/shipments', authenticateToken, async (req, res) => {
   try {
     const shipments = await prisma.shipment.findMany({
@@ -95,11 +105,10 @@ app.get('/api/shipments', authenticateToken, async (req, res) => {
   }
 });
 
-// POST /api/shipments (New Dubai Outbound Batch)
+// POST /api/shipments
 app.post('/api/shipments', authenticateToken, async (req, res) => {
   try {
     const { brand, quantity, sender, receiver, travelerName, travelerPhone, departureDate, notes } = req.body;
-
     const trackingId = `TRK-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const shipment = await prisma.shipment.create({
@@ -124,7 +133,7 @@ app.post('/api/shipments', authenticateToken, async (req, res) => {
   }
 });
 
-// PATCH /api/shipments/:id/status (Transit or Addis arrival confirmation)
+// PATCH /api/shipments/:id/status
 app.patch('/api/shipments/:id/status', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -136,6 +145,23 @@ app.patch('/api/shipments/:id/status', authenticateToken, async (req, res) => {
         status,
         ...(receivedQuantity !== undefined && { receivedQuantity: Number(receivedQuantity) })
       }
+    });
+
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/shipments/:id/log-call (Mark as called)
+app.post('/api/shipments/:id/log-call', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + new Date().toLocaleDateString();
+
+    const updated = await prisma.shipment.update({
+      where: { id },
+      data: { lastCalledAt: timestamp }
     });
 
     res.json(updated);

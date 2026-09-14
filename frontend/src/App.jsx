@@ -64,7 +64,7 @@ export default function App() {
   };
 
   if (!currentUser) {
-    return <AuthPage onLogin={handleLogin} />;
+    return <AuthPage onLoginSuccess={handleLoginSuccess} />;
   }
 
   return (
