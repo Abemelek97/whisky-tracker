@@ -1,8 +1,8 @@
 import React from 'react';
-import { Wine, ArrowRight, UserCheck, Phone } from 'lucide-react';
+import { Wine, ArrowRight, UserCheck, Phone, CheckCircle2 } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 
-export default function ShipmentTable({ shipments, onManage }) {
+export default function ShipmentTable({ shipments, onManage, onCallTraveler }) {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
       <div className="overflow-x-auto">
@@ -11,7 +11,7 @@ export default function ShipmentTable({ shipments, onManage }) {
             <tr className="border-b border-slate-800 bg-slate-900/80 text-xs font-semibold text-slate-400 uppercase tracking-wider">
               <th className="py-3.5 px-4">Tracking & Whiskey</th>
               <th className="py-3.5 px-4">Route & Vault</th>
-              <th className="py-3.5 px-4">Assigned Traveler</th>
+              <th className="py-3.5 px-4">Assigned Traveler & Contact</th>
               <th className="py-3.5 px-4">Quantity</th>
               <th className="py-3.5 px-4">Status</th>
               <th className="py-3.5 px-4 text-right">Actions</th>
@@ -49,11 +49,27 @@ export default function ShipmentTable({ shipments, onManage }) {
                       <UserCheck className="w-3.5 h-3.5 text-slate-400" />
                       {item.travelerName}
                     </div>
-                    <div className="text-xs text-amber-400/90 flex items-center gap-1 mt-0.5 font-mono">
-                      <Phone className="w-3 h-3 text-slate-500" />
-                      <a href={`tel:${item.travelerPhone}`} className="hover:underline">
-                        {item.travelerPhone}
+                    
+                    {/* Call Button & Status */}
+                    <div className="mt-1 flex items-center gap-2">
+                      <a
+                        href={`tel:${item.travelerPhone}`}
+                        onClick={() => onCallTraveler(item.id)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded text-xs font-mono transition cursor-pointer"
+                        title="Click to dial"
+                      >
+                        <Phone className="w-3 h-3" />
+                        <span>{item.travelerPhone}</span>
                       </a>
+
+                      {item.lastCalledAt ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          You called them ({item.lastCalledAt.split(',')[0]})
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-slate-500 italic">Not called yet</span>
+                      )}
                     </div>
                   </td>
 
@@ -75,7 +91,7 @@ export default function ShipmentTable({ shipments, onManage }) {
                   <td className="py-4 px-4 text-right">
                     <button 
                       onClick={() => onManage(item)}
-                      className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded border border-slate-700 transition cursor-pointer"
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded border border-slate-700 transition cursor-pointer"
                     >
                       Manage
                     </button>
