@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Search, Sparkles } from 'lucide-react';
+import { Search, Sparkles, FileSpreadsheet, Calendar } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import StatCards from '../components/StatCards';
 import ShipmentTable from '../components/ShipmentTable';
 import CreateShipmentModal from '../components/CreateShipmentModal';
 import ManageShipmentModal from '../components/ManageShipmentModal';
 import OnboardingModal from '../components/OnboardingModal';
+import { exportMonthlyWhiskyToCSV } from '../utils/exportToExcel';
 
 export default function DashboardPage({ 
   currentUser, 
@@ -13,6 +14,7 @@ export default function DashboardPage({
   onLogout, 
   onCreateShipment, 
   onUpdateStatus,
+  onCallTraveler,
   showOnboarding,
   setShowOnboarding 
 }) {
@@ -20,6 +22,10 @@ export default function DashboardPage({
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState(null);
+  
+  // Default export month to current month YYYY-MM
+  const currentYearMonth = new Date().toISOString().slice(0, 7);
+  const [exportMonth, setExportMonth] = useState(currentYearMonth);
 
   const filteredShipments = shipments.filter((item) => {
     const matchesSearch = 
@@ -55,26 +61,44 @@ export default function DashboardPage({
                 Welcome back, {currentUser.name}
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                {currentUser.role === 'sender' 
-                  ? 'Active in Dubai Outbound. Register outgoing traveler batches and seal codes.'
-                  : currentUser.role === 'receiver'
-                  ? 'Active in Addis Ababa Inbound. Verify arriving bottles and log discrepancy reports.'
-                  : 'Super Admin Access. Unrestricted controls for all dispatches and receiving depots.'}
+                Phone ID: <span className="text-amber-400 font-mono">{currentUser.phone}</span> • {
+                  currentUser.role === 'sender' 
+                    ? 'Dubai Outbound Operations' 
+                    : currentUser.role === 'receiver' 
+                    ? 'Addis Ababa Bole Inbound Operations' 
+                    : 'Logistics Super Admin'
+                }
               </p>
             </div>
           </div>
-          <button 
-            onClick={() => setShowOnboarding(true)}
-            className="text-xs font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-4 cursor-pointer whitespace-nowrap"
-          >
-            Review Corridor Guidelines
-          </button>
+
+          {/* EXCEL / CSV MONTHLY EXPORT TOOLBAR */}
+          <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 p-1.5 rounded-lg">
+            <div className="flex items-center gap-1.5 px-2 text-xs text-slate-400">
+              <Calendar className="w-3.5 h-3.5 text-amber-400" />
+              <input 
+                type="month"
+                value={exportMonth}
+                onChange={(e) => setExportMonth(e.target.value)}
+                className="bg-transparent text-xs text-slate-200 outline-none cursor-pointer"
+              />
+            </div>
+
+            <button
+              onClick={() => exportMonthlyWhiskyToCSV(shipments, exportMonth)}
+              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-3 py-1.5 rounded-md text-xs transition shadow cursor-pointer"
+              title="Export outgoing records to Excel CSV"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-slate-950" />
+              <span>Export Monthly Excel</span>
+            </button>
+          </div>
         </div>
 
-        {/* KPIs */}
+        {/* Stat KPIs */}
         <StatCards shipments={shipments} />
 
-        {/* Filter Controls */}
+        {/* Filter Controls & Search */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
           <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 flex-1 max-w-md">
             <Search className="w-4 h-4 text-slate-400 mr-2" />
@@ -108,6 +132,7 @@ export default function DashboardPage({
         <ShipmentTable 
           shipments={filteredShipments} 
           onManage={(item) => setSelectedShipment(item)} 
+          onCallTraveler={onCallTraveler}
         />
       </main>
 
@@ -125,6 +150,7 @@ export default function DashboardPage({
           onUpdateStatus(id, status, qty);
           setSelectedShipment(null);
         }}
+        onCallTraveler={onCallTraveler}
       />
 
       <OnboardingModal 

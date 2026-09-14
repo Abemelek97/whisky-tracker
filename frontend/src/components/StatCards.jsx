@@ -1,11 +1,12 @@
 import React from 'react';
 import { PlaneTakeoff, Package, CheckCircle2 } from 'lucide-react';
 
-export default function StatCards({ shipments }) {
-  const totalBottlesOut = shipments.reduce((acc, curr) => acc + curr.quantity, 0);
-  const totalBottlesIn = shipments.reduce((acc, curr) => acc + (curr.receivedQuantity || 0), 0);
-  const inTransitCount = shipments.filter(s => s.status === 'In Transit' || s.status === 'Dispatched').length;
-
+ export default function StatCards({ shipments = [] }) {
+  const safeShipments = Array.isArray(shipments) ? shipments : [];
+  const totalBottlesOut = safeShipments.reduce((acc, curr) => acc + (curr.quantity || 0), 0);
+  const totalBottlesIn = safeShipments.reduce((acc, curr) => acc + (curr.receivedQuantity || 0), 0);
+  const inTransitCount = safeShipments.filter(s => s.status === 'In Transit' || s.status === 'Dispatched').length;
+  // ... rest of the JSX
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex items-center justify-between">
