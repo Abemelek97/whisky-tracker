@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://whisky-tracker.onrender.com/api';
+const API_URL = 'https://whisky-tracker.onrender.com/api';
 
 function getAuthHeader() {
   const token = localStorage.getItem('ambervault_token');
