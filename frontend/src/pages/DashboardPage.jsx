@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Search, Sparkles, FileSpreadsheet, Calendar } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import StatCards from '../components/StatCards';
 import ShipmentTable from '../components/ShipmentTable';
 import CreateShipmentModal from '../components/CreateShipmentModal';
 import ManageShipmentModal from '../components/ManageShipmentModal';
+import RoomSelectorModal from '../components/RoomSelectorModal';
 import OnboardingModal from '../components/OnboardingModal';
 import { exportMonthlyWhiskyToCSV } from '../utils/exportToExcel';
 
 export default function DashboardPage({ 
   currentUser, 
+  currentRoom,
+  onRoomUpdated,
   shipments, 
   onLogout, 
   onCreateShipment, 
@@ -21,18 +23,20 @@ export default function DashboardPage({
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState(null);
   
-  // Default export month to current month YYYY-MM
   const currentYearMonth = new Date().toISOString().slice(0, 7);
   const [exportMonth, setExportMonth] = useState(currentYearMonth);
 
-  const filteredShipments = shipments.filter((item) => {
+  const safeShipments = Array.isArray(shipments) ? shipments : [];
+
+  const filteredShipments = safeShipments.filter((item) => {
     const matchesSearch = 
-      item.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.travelerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.travelerPhone.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.id.toLowerCase().includes(searchQuery.toLowerCase());
+      (item.brand || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.travelerName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.travelerPhone || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.id || '').toLowerCase().includes(searchQuery.toLowerCase());
 
     if (activeTab === 'dubai') return matchesSearch && item.status === 'Dispatched';
     if (activeTab === 'transit') return matchesSearch && item.status === 'In Transit';
@@ -44,64 +48,36 @@ export default function DashboardPage({
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       <Navbar 
         currentUser={currentUser}
+        currentRoom={currentRoom}
+        onOpenRoomModal={() => setIsRoomModalOpen(true)}
         onOpenNewDispatch={() => setIsCreateModalOpen(true)}
         onOpenHelp={() => setShowOnboarding(true)}
         onLogout={onLogout}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-6">
-        {/* Role Banner */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/20 border border-slate-800/80 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-400">
-              <Sparkles className="w-5 h-5" />
-            </div>
+        {/* If no room is joined, show prominent Connect Banner */}
+        {!currentRoom && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-slate-200">
-                Welcome back, {currentUser.name}
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Phone ID: <span className="text-amber-400 font-mono">{currentUser.phone}</span> • {
-                  currentUser.role === 'sender' 
-                    ? 'Dubai Outbound Operations' 
-                    : currentUser.role === 'receiver' 
-                    ? 'Addis Ababa Bole Inbound Operations' 
-                    : 'Logistics Super Admin'
-                }
-              </p>
+              <p className="text-sm font-semibold text-amber-400">You are not connected to a private vault room</p>
+              <p className="text-xs text-slate-400">Join or create a room with your partner in Dubai/Addis to dispatch and see shipments.</p>
             </div>
-          </div>
-
-          {/* EXCEL / CSV MONTHLY EXPORT TOOLBAR */}
-          <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 p-1.5 rounded-lg">
-            <div className="flex items-center gap-1.5 px-2 text-xs text-slate-400">
-              <Calendar className="w-3.5 h-3.5 text-amber-400" />
-              <input 
-                type="month"
-                value={exportMonth}
-                onChange={(e) => setExportMonth(e.target.value)}
-                className="bg-transparent text-xs text-slate-200 outline-none cursor-pointer"
-              />
-            </div>
-
             <button
-              onClick={() => exportMonthlyWhiskyToCSV(shipments, exportMonth)}
-              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-3 py-1.5 rounded-md text-xs transition shadow cursor-pointer"
-              title="Export outgoing records to Excel CSV"
+              onClick={() => setIsRoomModalOpen(true)}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs transition cursor-pointer"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-slate-950" />
-              <span>Export Monthly Excel</span>
+              Connect or Create Room
             </button>
           </div>
-        </div>
+        )}
 
         {/* Stat KPIs */}
-        <StatCards shipments={shipments} />
+        <StatCards shipments={safeShipments} />
 
         {/* Filter Controls & Search */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
           <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 flex-1 max-w-md">
-            <Search className="w-4 h-4 text-slate-400 mr-2" />
             <input 
               type="text" 
               placeholder="Search by bottle, traveler, phone, or ID..."
@@ -111,20 +87,13 @@ export default function DashboardPage({
             />
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-sm overflow-x-auto">
-            {['all', 'dubai', 'transit', 'addis'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1.5 rounded-md font-medium capitalize whitespace-nowrap transition cursor-pointer ${
-                  activeTab === tab 
-                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30 shadow-sm' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-                }`}
-              >
-                {tab === 'dubai' ? 'Dubai Outbound' : tab === 'addis' ? 'Addis Inbound' : tab}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => exportMonthlyWhiskyToCSV(safeShipments, exportMonth)}
+              className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-3 py-1.5 rounded-md text-xs transition cursor-pointer"
+            >
+              Export Monthly Excel
+            </button>
           </div>
         </div>
 
@@ -136,7 +105,17 @@ export default function DashboardPage({
         />
       </main>
 
-      {/* Modals */}
+      {/* Room Modal */}
+      <RoomSelectorModal 
+        isOpen={isRoomModalOpen}
+        onClose={() => setIsRoomModalOpen(false)}
+        currentRoom={currentRoom}
+        onRoomUpdated={(room) => {
+          onRoomUpdated(room);
+          setIsRoomModalOpen(false);
+        }}
+      />
+
       <CreateShipmentModal 
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}

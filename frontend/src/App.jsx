@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import AuthPage from './pages/Authpage';
+import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
-import { fetchShipments, createShipment, updateShipmentStatus, logTravelerCall } from './api';
+import { fetchShipments, createShipment, updateShipmentStatus, logTravelerCall, fetchMyRoom } from './api';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -9,79 +9,61 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [currentRoom, setCurrentRoom] = useState(null);
   const [shipments, setShipments] = useState([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  const loadShipments = async () => {
+  const loadData = async () => {
     try {
+      const room = await fetchMyRoom();
+      setCurrentRoom(room);
       const data = await fetchShipments();
       setShipments(data);
     } catch (err) {
-      console.error("Failed to load shipments:", err);
+      console.error("Failed to load app data:", err);
     }
   };
 
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('ambervault_user', JSON.stringify(currentUser));
-      loadShipments();
+      loadData();
     } else {
-      localStorage.removeItem('ambervault_user');
-      localStorage.removeItem('ambervault_token');
+      setCurrentRoom(null);
       setShipments([]);
     }
   }, [currentUser]);
 
-  const handleLoginSuccess = (user) => {
-    setCurrentUser(user);
-    setShowOnboarding(true);
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setShowOnboarding(false);
-  };
-
-  const handleCreateShipment = async (formData) => {
-    try {
-      const newShipment = await createShipment(formData);
-      setShipments(prev => [newShipment, ...prev]);
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  const handleUpdateStatus = async (id, newStatus, receivedQty = null) => {
-    try {
-      const updated = await updateShipmentStatus(id, newStatus, receivedQty);
-      setShipments(prev => prev.map(item => item.id === id ? updated : item));
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  // When admin dials the traveler
-  const handleCallTraveler = async (id) => {
-    try {
-      const updated = await logTravelerCall(id);
-      setShipments(prev => prev.map(item => item.id === id ? updated : item));
-    } catch (err) {
-      console.error("Failed to log call:", err);
-    }
+  const handleRoomUpdated = (room) => {
+    setCurrentRoom(room);
+    loadData(); // Refreshes shipment list scoped to this room!
   };
 
   if (!currentUser) {
-    return <AuthPage onLoginSuccess={handleLoginSuccess} />;
+    return <AuthPage onLoginSuccess={(user) => setCurrentUser(user)} />;
   }
 
   return (
     <DashboardPage 
       currentUser={currentUser}
+      currentRoom={currentRoom}
+      onRoomUpdated={handleRoomUpdated}
       shipments={shipments}
-      onLogout={handleLogout}
-      onCreateShipment={handleCreateShipment}
-      onUpdateStatus={handleUpdateStatus}
-      onCallTraveler={handleCallTraveler}
+      onLogout={() => {
+        localStorage.clear();
+        setCurrentUser(null);
+      }}
+      onCreateShipment={async (form) => {
+        const item = await createShipment(form);
+        setShipments(prev => [item, ...prev]);
+      }}
+      onUpdateStatus={async (id, status, qty) => {
+        const item = await updateShipmentStatus(id, status, qty);
+        setShipments(prev => prev.map(s => s.id === id ? item : s));
+      }}
+      onCallTraveler={async (id) => {
+        const item = await logTravelerCall(id);
+        setShipments(prev => prev.map(s => s.id === id ? item : s));
+      }}
       showOnboarding={showOnboarding}
       setShowOnboarding={setShowOnboarding}
     />

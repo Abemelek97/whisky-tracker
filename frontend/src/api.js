@@ -100,6 +100,16 @@ export async function fetchMyRoom() {
     headers: { ...getAuthHeader() }
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to load room');
+  if (!res.ok) throw new Error(data.error || 'Failed to fetch room');
+  return data;
+}
+
+export async function leaveRoom() {
+  const res = await fetch(`${API_URL}/rooms/leave`, {
+    method: 'POST',
+    headers: { ...getAuthHeader() }
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to leave room');
   return data;
 }
