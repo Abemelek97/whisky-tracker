@@ -90,13 +90,99 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// ----------------- PRIVATE ROOM ROUTES ----------------- //
+
+// Create a new private Room
+app.post('/api/rooms/create', authenticateToken, async (req, res) => {
+  try {
+    const { name, code, pin } = req.body;
+    if (!name || !code || !pin) {
+      return res.status(400).json({ error: 'Room name, code, and PIN are required' });
+    }
+
+    const cleanCode = code.trim().toUpperCase();
+    const existing = await prisma.room.findUnique({ where: { code: cleanCode } });
+    if (existing) {
+      return res.status(400).json({ error: 'A room with this code already exists' });
+    }
+
+    const room = await prisma.room.create({
+      data: { name, code: cleanCode, pin: pin.trim() }
+    });
+
+    // Automatically link the creator to this room
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { roomId: room.id }
+    });
+
+    res.json({ message: 'Room created successfully', room });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Join an existing private Room with Code & PIN
+app.post('/api/rooms/join', authenticateToken, async (req, res) => {
+  try {
+    const { code, pin } = req.body;
+    const cleanCode = (code || '').trim().toUpperCase();
+
+    const room = await prisma.room.findUnique({ where: { code: cleanCode } });
+    if (!room || room.pin !== pin.trim()) {
+      return res.status(403).json({ error: 'Invalid Room Code or PIN' });
+    }
+
+    // Connect user to this private room
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { roomId: room.id },
+      include: { room: true }
+    });
+
+    res.json({
+      message: `Joined private room: ${room.name}`,
+      room,
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        phone: updatedUser.phone,
+        role: updatedUser.role,
+        roomId: updatedUser.roomId
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get Current User's active room info
+app.get('/api/rooms/my-room', authenticateToken, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { room: true }
+    });
+    res.json(user?.room || null);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // ----------------- SHIPMENT ROUTES ----------------- //
 
-// GET /api/shipments
+// GET /api/shipments (Private to the user's room)
 app.get('/api/shipments', authenticateToken, async (req, res) => {
   try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+    if (!user.roomId) {
+      // If user hasn't joined a room, show empty or prompt to join
+      return res.json([]);
+    }
+
     const shipments = await prisma.shipment.findMany({
+      where: { roomId: user.roomId },
       orderBy: { createdAt: 'desc' }
     });
     res.json(shipments);
@@ -105,9 +191,14 @@ app.get('/api/shipments', authenticateToken, async (req, res) => {
   }
 });
 
-// POST /api/shipments
+// POST /api/shipments (Saves to the user's private room)
 app.post('/api/shipments', authenticateToken, async (req, res) => {
   try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user.roomId) {
+      return res.status(400).json({ error: 'You must join or create a private room before dispatching' });
+    }
+
     const { brand, quantity, sender, receiver, travelerName, travelerPhone, departureDate, notes } = req.body;
     const trackingId = `TRK-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -123,7 +214,8 @@ app.post('/api/shipments', authenticateToken, async (req, res) => {
         departureDate: departureDate || new Date().toISOString().split('T')[0],
         status: 'Dispatched',
         notes: notes || '',
-        createdById: req.user.id
+        createdById: req.user.id,
+        roomId: user.roomId
       }
     });
 

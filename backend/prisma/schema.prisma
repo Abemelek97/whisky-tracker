@@ -4,7 +4,17 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  url      = "file:./dev.db"
+}
+
+model Room {
+  id          String     @id @default(uuid())
+  name        String     // e.g. "Dubai Terminal 3 ➔ Bole Vault"
+  code        String     @unique // e.g. "DXB-ADD-77"
+  pin         String     // Secret PIN to join
+  createdAt   DateTime   @default(now())
+  users       User[]
+  shipments   Shipment[]
 }
 
 model User {
@@ -13,6 +23,8 @@ model User {
   phone     String     @unique
   password  String
   role      String     // 'sender', 'receiver', 'superadmin'
+  roomId    String?
+  room      Room?      @relation(fields: [roomId], references: [id])
   createdAt DateTime   @default(now())
   shipments Shipment[] @relation("UserShipments")
 }
@@ -31,8 +43,10 @@ model Shipment {
   status           String    @default("Dispatched")
   receivedQuantity Int?
   notes            String?
-  lastCalledAt     String?   // Tracks timestamp when admin dialed the traveler
+  lastCalledAt     String?
   createdAt        DateTime  @default(now())
   createdById      String?
   createdBy        User?     @relation("UserShipments", fields: [createdById], references: [id])
+  roomId           String?
+  room             Room?     @relation(fields: [roomId], references: [id])
 }
