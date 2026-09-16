@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import AuthPage from './pages/AuthPage';
+import AuthPage from './pages/Authpage';
 import DashboardPage from './pages/DashboardPage';
 import { fetchShipments, createShipment, updateShipmentStatus, logTravelerCall, fetchMyRoom } from './api';
 
