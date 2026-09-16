@@ -73,3 +73,33 @@ export async function logTravelerCall(id) {
   if (!res.ok) throw new Error(data.error || 'Failed to log call');
   return data;
 }
+export async function createRoom(roomData) {
+  const res = await fetch(`${API_URL}/rooms/create`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify(roomData)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to create room');
+  return data;
+}
+
+export async function joinRoom(roomData) {
+  const res = await fetch(`${API_URL}/rooms/join`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify(roomData)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to join room');
+  return data;
+}
+
+export async function fetchMyRoom() {
+  const res = await fetch(`${API_URL}/rooms/my-room`, {
+    headers: { ...getAuthHeader() }
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to load room');
+  return data;
+}

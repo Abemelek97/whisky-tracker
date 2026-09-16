@@ -50,7 +50,7 @@ export default function AuthPage({ onLoginSuccess }) {
           <div className="inline-flex p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-500 mb-3">
             <Wine className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-100">AmberVault Track</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-100">Whisky Tracker</h1>
           <p className="text-xs text-slate-400 mt-1">Phone-Verified Dubai ➔ Addis Whiskey Logistics</p>
         </div>
 
