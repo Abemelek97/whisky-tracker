@@ -13,7 +13,7 @@ export default function Navbar({ currentUser, onOpenNewDispatch, onOpenHelp, onL
           </div>
           <div>
             <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text text-transparent">
-              AmberVault Track
+              Whisky Tracker
             </span>
             <span className="text-xs text-slate-400 block -mt-1">Dubai ➔ Addis Ababa Corridor</span>
           </div>

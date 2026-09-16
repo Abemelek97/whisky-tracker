@@ -52,7 +52,7 @@ export const INITIAL_SHIPMENTS = [
 export const ONBOARDING_STEPS = [
   {
     title: "The Dubai-to-Addis Corridor",
-    desc: "AmberVault tracks fine whiskey transit handled by individual travelers flying from Dubai (DXB) directly to depots in Addis Ababa (ADD).",
+    desc: "This Whisky Tracker tracks fine whiskey transit handled by individual travelers flying from Dubai (DXB) directly to depots in Addis Ababa (ADD).",
     iconKey: "wine"
   },
   {
